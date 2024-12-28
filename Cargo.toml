@@ -1,0 +1,12 @@
+[package]
+name = "mini-web-browser-tutorial"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "mini-web-browser-tutorial"
+test = false
+bench = false
+
+[dependencies]
+combine = "4.6.7"
