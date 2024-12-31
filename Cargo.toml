@@ -10,3 +10,4 @@ bench = false
 
 [dependencies]
 combine = "4.6.7"
+cursive = "0.21.1"

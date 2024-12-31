@@ -7,6 +7,14 @@ use combine::{
     satisfy,
 };
 
+fn whitespaces<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    many::<String, _, _>(space().or(newline()))
+}
+
 /// `attribute` consumes `name="value"`.
 fn attribute<Input>() -> impl Parser<Input, Output = (String, String)>
 where
@@ -76,7 +84,10 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    attempt(many(choice((attempt(element()), attempt(text())))))
+    attempt(many(choice((
+        attempt(element()),
+        attempt(text().skip(whitespaces())),
+    ))))
 }
 
 /// `text` consumes input until `<` comes.
@@ -94,8 +105,12 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    (open_tag(), nodes(), close_tag()).and_then(
-        |((open_tag_name, attributes), children, close_tag_name)| {
+    (
+        open_tag().skip(whitespaces()),
+        nodes().skip(whitespaces()),
+        close_tag().skip(whitespaces()),
+    )
+        .and_then(|((open_tag_name, attributes), children, close_tag_name)| {
             if open_tag_name == close_tag_name {
                 Ok(Element::new(open_tag_name, attributes, children))
             } else {
@@ -107,8 +122,7 @@ where
                     "tag name of open tag and close tag mismatched",
                 ))
             }
-        },
-    )
+        })
 }
 
 parser! {
@@ -135,8 +149,6 @@ pub fn parse_raw(raw: &str) -> Vec<Box<Node>> {
 
 #[cfg(test)]
 mod tests {
-    use crate::dom::Text;
-
     use super::*;
 
     // parsing tests of attributes
