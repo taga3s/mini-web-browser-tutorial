@@ -1,3 +1,4 @@
+use super::dom::{Node, NodeType};
 use combine::{
     choice,
     error::StreamError,
@@ -5,8 +6,7 @@ use combine::{
     parser::char::{self, letter, newline, space},
     sep_by, sep_end_by, ParseError, Parser, Stream,
 };
-
-use crate::dom::{Node, NodeType};
+// use thiserror::Error;
 
 /// `Stylesheet` represents a single stylesheet.
 /// It consists of multiple rules, which are called "rule-list" in the standard (https://www.w3.org/TR/css-syntax-3/).
@@ -128,7 +128,20 @@ pub struct Declaration {
 #[derive(Debug, PartialEq, Clone)]
 pub enum CSSValue {
     Keyword(String),
+    Length((usize, Unit)),
 }
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum Unit {
+    Em,
+    // TODO (enhancement): add more units here from the definition.
+}
+
+// #[derive(Error, Debug, PartialEq)]
+// pub enum CSSParseError {
+//     #[error("failed to parse: {0}")]
+//     InvalidResourceError(StringStreamError),
+// }
 
 pub fn parse(raw: &str) -> Stylesheet {
     rules()
@@ -263,7 +276,12 @@ where
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
     let keyword = many1(letter()).map(|s| CSSValue::Keyword(s));
-    keyword
+    let length = (
+        many1(char::digit()).map(|s: String| s.parse::<usize>().unwrap()),
+        char::string("em"),
+    )
+        .map(|(num, _unit)| CSSValue::Length((num, Unit::Em)));
+    choice((keyword, length))
 }
 
 #[cfg(test)]
@@ -275,7 +293,7 @@ mod tests {
     #[test]
     fn test_stylesheet() {
         assert_eq!(
-            rules().parse("test [foo=bar] { aa: bb; cc: dd } rule { ee: dd;  }"),
+            rules().parse("test [foo=bar] { aa: bb; cc: 1em } rule { ee: dd;  }"),
             Ok((
                 vec![
                     Rule {
@@ -292,7 +310,7 @@ mod tests {
                             },
                             Declaration {
                                 name: "cc".to_string(),
-                                value: CSSValue::Keyword("dd".to_string()),
+                                value: CSSValue::Length((1, Unit::Em)),
                             }
                         ]
                     },
@@ -330,21 +348,21 @@ mod tests {
         );
 
         assert_eq!(
-            rule().parse("test [foo=bar], testtest[piyo~=guoo] {}"),
+            rule().parse("test [aa=bb], piyo[cc~=dd] {}"),
             Ok((
                 Rule {
                     selectors: vec![
                         SimpleSelector::AttributeSelector {
                             tag_name: "test".to_string(),
-                            attribute: "foo".to_string(),
+                            attribute: "aa".to_string(),
                             op: AttributeSelectorOp::Eq,
-                            value: "bar".to_string()
+                            value: "bb".to_string()
                         },
                         SimpleSelector::AttributeSelector {
-                            tag_name: "testtest".to_string(),
-                            attribute: "piyo".to_string(),
+                            tag_name: "piyo".to_string(),
+                            attribute: "cc".to_string(),
                             op: AttributeSelectorOp::Contain,
-                            value: "guoo".to_string()
+                            value: "dd".to_string()
                         }
                     ],
                     declarations: vec![]
@@ -382,7 +400,7 @@ mod tests {
     #[test]
     fn test_declarations() {
         assert_eq!(
-            declarations().parse("foo: bar; piyo: piyopiyo;"),
+            declarations().parse("foo: bar; piyo: 1em;"),
             Ok((
                 vec![
                     Declaration {
@@ -391,7 +409,7 @@ mod tests {
                     },
                     Declaration {
                         name: "piyo".to_string(),
-                        value: CSSValue::Keyword("piyopiyo".to_string())
+                        value: CSSValue::Length((1, Unit::Em)),
                     }
                 ],
                 ""
@@ -464,11 +482,11 @@ mod tests {
     #[test]
     fn test_declaration() {
         assert_eq!(
-            declaration().parse("keykey:piyo"),
+            declaration().parse("key:1em"),
             Ok((
                 Declaration {
-                    name: "keykey".to_string(),
-                    value: CSSValue::Keyword("piyo".to_string()),
+                    name: "key".to_string(),
+                    value: CSSValue::Length((1, Unit::Em)),
                 },
                 ""
             ))

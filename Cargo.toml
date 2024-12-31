@@ -11,3 +11,4 @@ bench = false
 [dependencies]
 combine = "4.6.7"
 cursive = "0.21.1"
+thiserror = "2.0.9"
