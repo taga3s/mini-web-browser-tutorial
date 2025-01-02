@@ -20,14 +20,15 @@ pub enum Display {
 #[derive(Debug, PartialEq)]
 pub struct StyledNode<'a> {
     pub node_type: &'a NodeType,
-    pub children: Vec<StyledNode<'a>>,
-
     pub properties: PropertyMap,
+    pub children: Vec<StyledNode<'a>>,
 }
 
 pub fn to_styled_node<'a>(node: &'a Box<Node>, stylesheet: &Stylesheet) -> Option<StyledNode<'a>> {
-    let mut properties: HashMap<String, CSSValue> = [].iter().cloned().collect();
+    let mut properties = PropertyMap::new();
+    let children = to_styled_nodes(&node.children, stylesheet);
 
+    // match CSS rules
     for matched_rule in stylesheet.rules.iter().filter(|r| r.matches(node)) {
         for declaration in &matched_rule.declarations {
             properties.insert(declaration.name.clone(), declaration.value.clone());
@@ -38,17 +39,21 @@ pub fn to_styled_node<'a>(node: &'a Box<Node>, stylesheet: &Stylesheet) -> Optio
         return None;
     }
 
-    let children = node
-        .children
-        .iter()
-        .filter_map(|x| to_styled_node(x, stylesheet))
-        .collect();
-
     Some(StyledNode {
         node_type: &node.node_type,
         properties,
         children,
     })
+}
+
+pub fn to_styled_nodes<'a>(
+    nodes: &'a Vec<Box<Node>>,
+    stylesheet: &Stylesheet,
+) -> Vec<StyledNode<'a>> {
+    nodes
+        .iter()
+        .filter_map(|x| to_styled_node(x, stylesheet))
+        .collect()
 }
 
 impl<'a> StyledNode<'a> {
