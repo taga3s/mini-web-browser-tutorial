@@ -133,7 +133,10 @@ pub enum CSSValue {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Unit {
+    Px,
     Em,
+    Rem,
+    Percent,
     // TODO (enhancement): add more units here from the definition.
 }
 
@@ -278,9 +281,14 @@ where
     let keyword = many1(letter()).map(|s| CSSValue::Keyword(s));
     let length = (
         many1(char::digit()).map(|s: String| s.parse::<usize>().unwrap()),
-        char::string("em"),
+        choice((
+            char::string("px").map(|_| Unit::Px),
+            char::string("em").map(|_| Unit::Em),
+            char::string("rem").map(|_| Unit::Rem),
+            char::string("%").map(|_| Unit::Percent),
+        )),
     )
-        .map(|(num, _unit)| CSSValue::Length((num, Unit::Em)));
+        .map(|(num, _unit)| CSSValue::Length((num, _unit)));
     choice((keyword, length))
 }
 
@@ -293,7 +301,7 @@ mod tests {
     #[test]
     fn test_stylesheet() {
         assert_eq!(
-            rules().parse("test [foo=bar] { aa: bb; cc: 1em } rule { ee: dd;  }"),
+            rules().parse("test [foo=bar] { aa: 4px; cc: 1em } rule { ee: dd;  }"),
             Ok((
                 vec![
                     Rule {
@@ -306,7 +314,7 @@ mod tests {
                         declarations: vec![
                             Declaration {
                                 name: "aa".to_string(),
-                                value: CSSValue::Keyword("bb".to_string())
+                                value: CSSValue::Length((4, Unit::Px)),
                             },
                             Declaration {
                                 name: "cc".to_string(),
@@ -372,7 +380,7 @@ mod tests {
         );
 
         assert_eq!(
-            rule().parse("test [foo=bar] { aa: bb; cc: dd; }"),
+            rule().parse("test [foo=bar] { aa: bb; cc: 60%; }"),
             Ok((
                 Rule {
                     selectors: vec![SimpleSelector::AttributeSelector {
@@ -388,7 +396,7 @@ mod tests {
                         },
                         Declaration {
                             name: "cc".to_string(),
-                            value: CSSValue::Keyword("dd".to_string()),
+                            value: CSSValue::Length((60, Unit::Percent)),
                         }
                     ]
                 },
@@ -400,7 +408,7 @@ mod tests {
     #[test]
     fn test_declarations() {
         assert_eq!(
-            declarations().parse("foo: bar; piyo: 1em;"),
+            declarations().parse("foo: bar; piyo: 1rem;"),
             Ok((
                 vec![
                     Declaration {
@@ -409,7 +417,7 @@ mod tests {
                     },
                     Declaration {
                         name: "piyo".to_string(),
-                        value: CSSValue::Length((1, Unit::Em)),
+                        value: CSSValue::Length((1, Unit::Rem)),
                     }
                 ],
                 ""
