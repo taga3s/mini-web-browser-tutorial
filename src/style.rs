@@ -35,6 +35,12 @@ pub fn to_styled_node<'a>(node: &'a Box<Node>, stylesheet: &Stylesheet) -> Optio
         }
     }
 
+    // set the initial display property `inline` if not set
+    // https://drafts.csswg.org/css-display/#the-display-properties
+    if properties.get("display") == None {
+        properties.insert("display".into(), CSSValue::Keyword("inline".into()));
+    }
+
     if properties.get("display") == Some(&CSSValue::Keyword("none".into())) {
         return None;
     }
@@ -114,7 +120,10 @@ mod tests {
                         value: CSSValue::Keyword("block".to_string()),
                     }],
                 }]),
-                vec![],
+                vec![(
+                    "display".to_string(),
+                    CSSValue::Keyword("inline".to_string()),
+                )],
             ),
             (
                 // * { display: block; }
@@ -202,7 +211,7 @@ mod tests {
             ),
             (
                 // * { display: block; }
-                // p[id=hello] { testname: testvalue; }
+                // p[id=test] { testname: testvalue; }
                 Stylesheet::new(vec![
                     Rule {
                         selectors: vec![SimpleSelector::UniversalSelector],
@@ -322,7 +331,13 @@ mod tests {
                 to_styled_node(parent, &stylesheet),
                 Some(StyledNode {
                     node_type: &parent.node_type,
-                    properties: [].iter().cloned().collect(),
+                    properties: [(
+                        "display".to_string(),
+                        CSSValue::Keyword("inline".to_string()),
+                    )]
+                    .iter()
+                    .cloned()
+                    .collect(),
                     children: vec![StyledNode {
                         node_type: &child_node_type,
                         properties: [(
@@ -397,7 +412,13 @@ mod tests {
             to_styled_node(parent, &stylesheet),
             Some(StyledNode {
                 node_type: &parent.node_type,
-                properties: [].iter().cloned().collect(),
+                properties: [(
+                    "display".to_string(),
+                    CSSValue::Keyword("inline".to_string()),
+                )]
+                .iter()
+                .cloned()
+                .collect(),
                 children: vec![],
             })
         );
