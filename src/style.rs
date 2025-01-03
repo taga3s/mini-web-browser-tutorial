@@ -45,6 +45,12 @@ pub fn to_styled_node<'a>(node: &'a Box<Node>, stylesheet: &Stylesheet) -> Optio
         return None;
     }
 
+    // set the initial font-weight property `normal` if not set
+    // https://drafts.csswg.org/css-fonts/#font-weight-prop
+    if properties.get("font-weight") == None {
+        properties.insert("font-weight".into(), CSSValue::Keyword("normal".into()));
+    }
+
     Some(StyledNode {
         node_type: &node.node_type,
         properties,
@@ -104,10 +110,13 @@ mod tests {
                         value: CSSValue::Keyword("block".to_string()),
                     }],
                 }]),
-                vec![(
-                    "display".to_string(),
-                    CSSValue::Keyword("block".to_string()),
-                )],
+                vec![
+                    (
+                        "display".to_string(),
+                        CSSValue::Keyword("block".to_string()),
+                    ),
+                    ("font-weight".into(), CSSValue::Keyword("normal".into())),
+                ],
             ),
             (
                 // div { display: block; }
@@ -120,10 +129,13 @@ mod tests {
                         value: CSSValue::Keyword("block".to_string()),
                     }],
                 }]),
-                vec![(
-                    "display".to_string(),
-                    CSSValue::Keyword("inline".to_string()),
-                )],
+                vec![
+                    (
+                        "display".to_string(),
+                        CSSValue::Keyword("inline".to_string()),
+                    ),
+                    ("font-weight".into(), CSSValue::Keyword("normal".into())),
+                ],
             ),
             (
                 // * { display: block; }
@@ -146,10 +158,13 @@ mod tests {
                         }],
                     },
                 ]),
-                vec![(
-                    "display".to_string(),
-                    CSSValue::Keyword("block".to_string()),
-                )],
+                vec![
+                    (
+                        "display".to_string(),
+                        CSSValue::Keyword("block".to_string()),
+                    ),
+                    ("font-weight".into(), CSSValue::Keyword("normal".into())),
+                ],
             ),
             (
                 // * { display: block; }
@@ -180,6 +195,7 @@ mod tests {
                 ]),
                 vec![
                     ("display".into(), CSSValue::Keyword("inline".into())),
+                    ("font-weight".into(), CSSValue::Keyword("normal".into())),
                     ("testname".into(), CSSValue::Keyword("testvalue".into())),
                 ],
             ),
@@ -207,7 +223,10 @@ mod tests {
                         }],
                     },
                 ]),
-                vec![("display".into(), CSSValue::Keyword("block".into()))],
+                vec![
+                    ("display".into(), CSSValue::Keyword("block".into())),
+                    ("font-weight".into(), CSSValue::Keyword("normal".into())),
+                ],
             ),
             (
                 // * { display: block; }
@@ -235,6 +254,7 @@ mod tests {
                 ]),
                 vec![
                     ("display".into(), CSSValue::Keyword("block".into())),
+                    ("font-weight".into(), CSSValue::Keyword("normal".into())),
                     ("testname".into(), CSSValue::Keyword("testvalue".into())),
                 ],
             ),
@@ -293,19 +313,28 @@ mod tests {
                 to_styled_node(parent, &stylesheet),
                 Some(StyledNode {
                     node_type: &parent.node_type,
-                    properties: [(
-                        "display".to_string(),
-                        CSSValue::Keyword("block".to_string()),
-                    )]
+                    properties: [
+                        (
+                            "display".to_string(),
+                            CSSValue::Keyword("block".to_string()),
+                        ),
+                        ("font-weight".into(), CSSValue::Keyword("normal".into()))
+                    ]
                     .iter()
                     .cloned()
                     .collect(),
                     children: vec![StyledNode {
                         node_type: &child_node_type,
-                        properties: [(
-                            "display".to_string(),
-                            CSSValue::Keyword("block".to_string()),
-                        )]
+                        properties: [
+                            (
+                                "display".to_string(),
+                                CSSValue::Keyword("block".to_string()),
+                            ),
+                            (
+                                "font-weight".to_string(),
+                                CSSValue::Keyword("normal".to_string()),
+                            )
+                        ]
                         .iter()
                         .cloned()
                         .collect(),
@@ -331,19 +360,28 @@ mod tests {
                 to_styled_node(parent, &stylesheet),
                 Some(StyledNode {
                     node_type: &parent.node_type,
-                    properties: [(
-                        "display".to_string(),
-                        CSSValue::Keyword("inline".to_string()),
-                    )]
+                    properties: [
+                        (
+                            "display".to_string(),
+                            CSSValue::Keyword("inline".to_string()),
+                        ),
+                        ("font-weight".into(), CSSValue::Keyword("normal".into()))
+                    ]
                     .iter()
                     .cloned()
                     .collect(),
                     children: vec![StyledNode {
                         node_type: &child_node_type,
-                        properties: [(
-                            "display".to_string(),
-                            CSSValue::Keyword("block".to_string()),
-                        )]
+                        properties: [
+                            (
+                                "display".to_string(),
+                                CSSValue::Keyword("block".to_string()),
+                            ),
+                            (
+                                "font-weight".to_string(),
+                                CSSValue::Keyword("normal".to_string()),
+                            )
+                        ]
                         .iter()
                         .cloned()
                         .collect(),
@@ -412,10 +450,16 @@ mod tests {
             to_styled_node(parent, &stylesheet),
             Some(StyledNode {
                 node_type: &parent.node_type,
-                properties: [(
-                    "display".to_string(),
-                    CSSValue::Keyword("inline".to_string()),
-                )]
+                properties: [
+                    (
+                        "display".to_string(),
+                        CSSValue::Keyword("inline".to_string()),
+                    ),
+                    (
+                        "font-weight".to_string(),
+                        CSSValue::Keyword("normal".to_string()),
+                    )
+                ]
                 .iter()
                 .cloned()
                 .collect(),
